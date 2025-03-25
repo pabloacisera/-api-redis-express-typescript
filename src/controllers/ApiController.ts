@@ -3,7 +3,44 @@ import instance from "../config/http.client";
 import { IResponse } from "../interfaces/IResponse";
 import { client } from '../config/redis.config';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Data
+ *   description: Fake data for frontend testing
+ */
 export class ApiController {
+
+  /**
+   * @swagger
+   * /get_fake_data:
+   *   get:
+   *     summary: Get fake data for testing
+   *     description: Returns an array of fake data, first checking Redis cache and if not available, queries the external API
+   *     tags: [Data]
+   *     responses: 
+   *       200:
+   *         description: Successful operation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/FakeData'
+   *       500:
+   *         description: Internal Server Error
+   *         content:
+   *           application/json:
+   *             schema: 
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: 'Error fetching fake data'
+   *                 details:
+   *                   type: string
+   *                   example: 'Failed to connect to external API'
+   */
   public async getData(req: Request, res: Response): Promise<void> {
     console.log(`🛂 [CONTROLLER] Procesando solicitud GET /data`);
 

@@ -10,7 +10,9 @@ const instance = axios.create({
   baseURL: 'https://retoolapi.dev/0EOPV6/data',
   timeout: 5000,
   headers: {
-    'X-Custom-Header': 'foobar'
+    'X-Custom-Header': 'foobar',
+    'Accept': 'application/json',
+    'Content-Type':'application/json'
   }
 })
 

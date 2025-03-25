@@ -4,6 +4,8 @@ import expressListEndpoints from 'express-list-endpoints';
 import morgan from 'morgan';
 import responseTime from 'response-time';
 import { connectRedis, client } from './config/redis.config';
+import { setupSwagger } from './config/swagger.config';
+import cors from 'cors'
 
 const app = express();
 
@@ -14,14 +16,25 @@ async function startServer() {
     console.log('✅ [APP] Conexión a Redis establecida');
 
     // 2. Configurar Express
+    app.use(cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
+      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Authorization', 'Accept'],
+      preflightContinue: false,
+    }))
     app.use(morgan('dev'));
     app.use(express.json());
     app.use(responseTime());
+
+    setupSwagger(app)
+
     app.use('', dataRoutes);
 
     // 3. Iniciar servidor HTTP
     const server = app.listen(4005, () => {
       console.log('🚀 Servidor corriendo en http://localhost:4005/\n');
+      console.log('📓 Servidor de swagger corriendo en http://localhost:4005/api-docs')
 
       // Mostrar todos los endpoints
       const endpoints = expressListEndpoints(app);
