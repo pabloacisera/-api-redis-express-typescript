@@ -5,8 +5,16 @@ const router = Router();
 const controller = new ApiController();
 
 // Versión simplificada y funcional
-router.get('/get_fake_data', (req, res, next) => {
+router.get('/data', (req, res, next) => {
   controller.getData(req, res).catch(next);
 });
+
+router.get('/data/:id', (req, res, next) => {
+  controller.getDataById(req, res).catch(next);
+})
+
+router.post('/data', (req, res, next) => {
+  controller.createData(req, res).catch(next);
+})
 
 export default router;

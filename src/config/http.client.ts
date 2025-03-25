@@ -7,7 +7,7 @@ import axios from 'axios'
 */
 
 const instance = axios.create({
-  baseURL: 'https://retoolapi.dev/0EOPV6/data',
+  baseURL: 'http://localhost:3009',
   timeout: 5000,
   headers: {
     'X-Custom-Header': 'foobar',
