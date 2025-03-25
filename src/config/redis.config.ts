@@ -26,15 +26,15 @@ redisClient.on('connect', () => {
 });
 
 redisClient.on('ready', () => {
-  console.log('🚀 [REDIS] Cliente listo para operar');
+  console.log('🚀 [REDIS] Preparing client');
 });
 
 redisClient.on('reconnecting', () => {
-  console.log('🔁 [REDIS] Reconectando...');
+  console.log('🔁 [REDIS] Reconnecting...');
 });
 
 redisClient.on('end', () => {
-  console.log('🚪 [REDIS] Conexión cerrada');
+  console.log('🚪 [REDIS] Connection succesfully');
 });
 
 // Exportaciones
@@ -42,14 +42,14 @@ export const client = redisClient;
 
 export const connectRedis = async () => {
   if (redisClient.isOpen) {
-    console.log('ℹ️ [REDIS] El cliente ya está conectado');
+    console.log('ℹ️ [REDIS] Client already connected');
     return;
   }
 
   try {
     await redisClient.connect();
   } catch (error) {
-    console.error('❌ [REDIS] Error crítico al conectar:', error);
+    console.error('❌ [REDIS] Error to connect:', error);
     throw error;
   }
 };

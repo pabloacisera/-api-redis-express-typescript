@@ -153,6 +153,32 @@ export class ApiController {
     }
   }
 
+  /**
+   * @swagger
+   * /data/{id}:
+   *   get:
+   *     summary: Get fake data by ID
+   *     description: Returns a single fake data record, first checking Redis cache
+   *     tags: [Data]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID of the data to retrieve
+   *     responses:
+   *       200:
+   *         description: Successful operation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FakeData'
+   *       404:
+   *         description: Data not found
+   *       500:
+   *         description: Internal Server Error
+   */
   public async getDataById(req: Request, res: Response): Promise<void> {
     const { id } = req.params
     console.log(`🛂 [CONTROLLER] Procesando solicitud GET /data/${id}`)
@@ -186,6 +212,133 @@ export class ApiController {
         error: 'Error fetching data by ID',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  }
+
+  /**
+   * @swagger
+   * /data/{id}:
+   *   patch:
+   *     summary: Partially update fake data by ID
+   *     description: Updates an existing fake data record and updates Redis cache
+   *     tags: [Data]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID of the data to update
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/FakeData'
+   *     responses:
+   *       200:
+   *         description: Data updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FakeData'
+   *       404:
+   *         description: Data not found
+   *       500:
+   *         description: Internal Server Error
+   */
+  public async updateDataById(req: Request, res: Response): Promise<void> {
+
+    const { id } = req.params
+    console.log(`🛂 [CONTROLLER] Procesando solicitud PATCH /data/${id}`)
+
+    try {
+      const partialUpdate = req.body
+      const currentData = await instance.get<IResponse>(`/people/${id}`)
+      if(!currentData.data) {
+        res.status(404).json({
+          error: 'Data not found'
+        })
+      }
+
+      const updatedData = {...currentData.data,...partialUpdate}
+
+      const apiRes = await instance.patch<IResponse>(`/peoples/${id}`, updatedData)
+
+      if(!apiRes.data) {
+        console.warn('�� [CONTROLLER] API no data');
+        throw new Error('Error to get data');
+      }
+
+      await client.set(`$(this.REDIS_KEY):${id}`, JSON.stringify(updatedData), {
+        EX: this.CACHE_EXPIRATION,
+      })
+
+      await client.del(this.REDIS_KEY)
+
+      res.status(200).json(apiRes.data);
+    } catch (error: unknown) {
+      console.error(`💥 [CONTROLLER ERROR]`, error);
+      res.status(500).json({
+        error: 'Error updating data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+ * @swagger
+ * /data/{id}:
+ *   delete:
+ *     summary: Delete fake data by ID
+ *     description: Deletes an existing fake data record and removes it from Redis cache
+ *     tags: [Data]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the data to delete
+ *     responses:
+ *       204:
+ *         description: Data deleted successfully
+ *       404:
+ *         description: Data not found
+ *       500:
+ *         description: Internal Server Error
+ */
+  public async deleteData(req: Request, res: Response): Promise<void> {
+    const { id } = req.params
+    console.log(`🛂 [CONTROLLER] Proccessing request:  DELETE /data/${id}`);
+
+    try {
+      const existingData = await instance.get<IResponse>(`/peoples/${id}`)
+      if(!existingData) {
+        console.warn(`⚠️ [CONTROLLER] Data not found with id: ${id}`)
+        res.status(404).json({
+          error: 'Data not found'
+        })
+      }
+
+      await instance.delete(`/peoples/${id}`)
+
+      const key = `${this.REDIS_KEY}:${id}`
+
+      await client.del(key)
+      await client.del(this.REDIS_KEY)
+
+      console.log(`✔️ [REDIS] Data with id: ${id} deleted successfully`)
+
+      res.status(204).send({
+        message: 'Data deleted successfully'
+      })
+    } catch (error) {
+      console.error(`💥 [CONTROLLER ERROR]`, error);
+      res.status(500).json({
+        error: 'Error deleting data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      })
     }
   }
 }

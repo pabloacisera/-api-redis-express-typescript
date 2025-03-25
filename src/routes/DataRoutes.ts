@@ -17,4 +17,12 @@ router.post('/data', (req, res, next) => {
   controller.createData(req, res).catch(next);
 })
 
+router.patch('/data/:id', (req, res, next) => {
+  controller.updateDataById(req, res).catch(next);
+})
+
+router.delete('/data/:id', (req, res, next)=> {
+  controller.deleteData(req, res).catch(next);
+})
+
 export default router;

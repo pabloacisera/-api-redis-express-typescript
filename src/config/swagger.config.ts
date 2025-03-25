@@ -7,7 +7,7 @@ const options: swaggerJsDoc.Options = {
   swaggerDefinition: {
     openapi: '3.0.0',
     info: {
-      title: 'API Documentation',
+      title: 'API Documentation of Tester Server',
       version: '1.0.0',
       description: 'API RESTful de datos falsos for frontend testing',
     },
