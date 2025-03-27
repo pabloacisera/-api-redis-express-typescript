@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id        Int    @id @default(autoincrement())
+  name      String
+  username  String
+  email     String  @unique
+  password  String
+  role      String
+  isActive  Boolean
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model Properties {
+  id         Int    @id @default(autoincrement())
+  fileNumber String @unique @map("file_number")
+  value      Float
+  address    String
+  ownerId    Int
+  owner      Owner  @relation("OwnerProperties", fields: [ownerId], references: [id])
+  dateRegitried DateTime
+  @@map("properties")
+}
+
+model Owner {
+  id          Int    @id @default(autoincrement())
+  name        String 
+  dni         String @unique
+  cuit        String @unique
+  age         String
+  address     String
+  phone       String
+  email       String  @unique
+  birthDate   DateTime @map("birth_date")
+  nationality String @default("Argentina")
+  properties  Properties[] @relation("OwnerProperties")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("owners")
+}
