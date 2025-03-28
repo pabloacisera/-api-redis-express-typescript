@@ -42,4 +42,66 @@ export class AuthController {
       })
     }
   }
+
+  async login(request: Request, response: Response) {
+    const { email, password } = request.body
+
+    try {
+      if (!email ||!password) {
+        throw new BadRequestError('Missing fields in the request body', {
+          details: {
+            email:!email? 'Missing email' : undefined,
+            password:!password? 'Missing password' : undefined
+          }
+        })
+      }
+
+      const user = {
+        email,
+        password
+      }
+
+      const result = await this.service.login(user)
+
+      if (!result) {
+        throw new NotFoundError('Invalid credentials', {
+          details: {
+            message: 'The provided credentials are not valid'
+          }
+        })
+      }
+
+      return response.json({
+        data: result
+      })
+    } catch (error) {
+      throw new InternalServerError('Error in server', {
+        details: error instanceof Error? error.message : 'Unknown error'
+      })
+    }
+  }
+
+  async confirmationEmail(request: Request, response: Response) {
+    const { id } = request.params
+
+    try {
+      if (!id) {
+        throw new BadRequestError('Missing required parameter', {
+          details: {
+            id: 'The id parameter is missing'
+          }
+        })
+      }
+
+      const result = await this.service.confirmRegister(parseInt(id))
+
+      return response.json({
+        data: result
+      })
+    } catch (error) {
+      throw new InternalServerError('Error in server', {
+        details: error instanceof Error? error.message : 'Unknown error'
+      })
+    }
+  }
 }

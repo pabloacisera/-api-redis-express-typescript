@@ -15,7 +15,7 @@ app.use('/auth', authRoutes);
 
 // Iniciar servidor
 const server = app.listen(port, () => {
-  console.log(`🖥️ Server running on: http://my-domain:${port}`);
+  console.log(`🖥️ Server running on: http://localhost:${port}`);
   
   // Mostrar rutas disponibles
   const routes = getRegisteredRoutes(app._router);
