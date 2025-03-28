@@ -1,0 +1,5 @@
+/auth/?:
+  - /auth/?/register (POST)
+  - /auth/?/login (POST)
+  - /auth/?/confirm_email/:id (GET)
+

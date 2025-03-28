@@ -6,7 +6,7 @@ import { EmailOptions, EmailTemplate } from "../interfaces/mail.interface";
 export class MailService {
   private templates: Record<string, EmailTemplate> = {
     WELCOME: {
-      subject:'Bienvenido/a a nuestra plataforma',
+      subject: 'Bienvenido/a a nuestra plataforma',
       html: (data: { name: string }) => `
         <h1>Hola ${data.name}</h1>
         <p>Gracias por registrarse en nuestra aplicación</p>
@@ -21,8 +21,8 @@ export class MailService {
     }
   }
 
-  async sendEmail(options: EmailOptions): Promise<boolean>{
-    try { 
+  async sendEmail(options: EmailOptions): Promise<boolean> {
+    try {
 
       console.log('📤 Attempting to send email to:', options.to);
       console.log('📧 Email options:', {
@@ -31,8 +31,8 @@ export class MailService {
         html: options.html ? 'HTML content present' : 'No HTML content'
       });
 
-       const transporter = createTransporter();
-      
+      const transporter = createTransporter();
+
       const info = await transporter.sendMail({
         from: `"${envs.EMAIL_FROM_NAME}" <${envs.EMAIL_FROM}>`,
         ...options
@@ -43,16 +43,16 @@ export class MailService {
       console.log('👀 Preview URL:', nodemailer.getTestMessageUrl(info));
 
       return true
-     } catch (error) {
+    } catch (error) {
       console.error('Error sending email: ', error)
       throw error
     }
   }
 
-  async sendTemplateEmail(templateName: keyof typeof this.templates, to: string, data: any): Promise<boolean>{
+  async sendTemplateEmail(templateName: keyof typeof this.templates, to: string, data: any): Promise<boolean> {
     const template = this.templates[templateName]
 
-    if(!template) {
+    if (!template) {
       throw new Error(`Template "${templateName}" not found`)
     }
 
@@ -63,5 +63,5 @@ export class MailService {
     }
 
     return await this.sendEmail(emailOptions)
-  } 
+  }
 }

@@ -10,7 +10,9 @@
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./@types"],
+    "types": ["node"]
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "prisma"]

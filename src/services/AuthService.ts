@@ -6,8 +6,8 @@ import { ConfirmEmailResponse, Login, LoginResponse } from "../interfaces/auth.i
 import { User, UserResponse } from "../interfaces/user.interface";
 import { MailService } from "./mail.service";
 
-export class AuthService{
-  
+export class AuthService {
+
   private prisma: PrismaClient
   private mailService: MailService
 
@@ -16,41 +16,41 @@ export class AuthService{
     this.mailService = new MailService()
   }
 
-  async confirmRegister(id: number): Promise< ConfirmEmailResponse >{
+  async confirmRegister(id: number): Promise<ConfirmEmailResponse> {
     try {
       const userFound = await this.prisma.user.findFirst({
-        where: {id}
+        where: { id }
       })
 
-      if(!userFound) {
+      if (!userFound) {
         return {
-          success:true,
+          success: true,
           message: 'El usuario no se ha registrado con exito, intente nuevamente mas tarde'
         }
       }
 
       if (userFound.isActive) {
-            return {
-                success: true,
-                message: 'La cuenta ya estaba activada anteriormente'
-            };
-        }
+        return {
+          success: true,
+          message: 'La cuenta ya estaba activada anteriormente'
+        };
+      }
 
       await this.prisma.user.update({
         where: { id },
         data: { isActive: true }
       })
-      
+
       return {
         success: true,
         message: 'Email confirmado correctamente. Usuario activo, ya puede iniciar sesión'
       }
     } catch (error) {
       console.error('Error al confirmar registro:', error);
-        return {
-            success: false,
-            message: 'Ocurrió un error al confirmar el registro. Por favor intente más tarde.'
-        };
+      return {
+        success: false,
+        message: 'Ocurrió un error al confirmar el registro. Por favor intente más tarde.'
+      };
     }
   }
 
@@ -106,7 +106,7 @@ export class AuthService{
         }
       })
 
-      if(userFound) {
+      if (userFound) {
         throw new Error('Email already exists')
       }
 
@@ -137,7 +137,7 @@ export class AuthService{
       if (!emailSent) {
         console.warn('⚠️ User registered but confirmation email not sent:', res.email);
       }
-      
+
       const token = await generateToken({
         userId: res.id,
         email: res.email,
@@ -145,9 +145,9 @@ export class AuthService{
       },
         envs.SECRET_KEY,
         {
-        expiresIn: '1h',
-        algorithm: 'HS256',
-      })
+          expiresIn: '1h',
+          algorithm: 'HS256',
+        })
 
       return {
         id: Number(res.id),
@@ -205,13 +205,15 @@ export class AuthService{
       },
         envs.SECRET_KEY,
         {
-        expiresIn: '1h',
-        algorithm: 'HS256',
-      })
+          expiresIn: '1h',
+          algorithm: 'HS256',
+        })
 
       return {
         success: true,
-        message: 'Username logged successfully'
+        message: 'Username logged successfully',
+        user: userFound,
+        token: token
       }
     } catch (error) {
       return {

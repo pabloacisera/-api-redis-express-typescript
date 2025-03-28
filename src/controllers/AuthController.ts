@@ -19,13 +19,13 @@ export class AuthController {
           details: {
             email: !user.email ? 'Missing email' : undefined,
             password: !user.password ? 'Missing password' : undefined,
-            role:!user.role? 'Missing role' : undefined,
+            role: !user.role ? 'Missing role' : undefined,
           }
         })
       }
       const result = await this.service.register(user)
 
-      if (!result) {  
+      if (!result) {
         throw new NotFoundError('The request could not be executed', {
           details: {
             message: 'The server has not responded or the response has no content'
@@ -38,7 +38,7 @@ export class AuthController {
       })
     } catch (error) {
       throw new InternalServerError('Error in sever', {
-        details: error instanceof Error? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error'
       })
     }
   }
@@ -47,11 +47,11 @@ export class AuthController {
     const { email, password } = request.body
 
     try {
-      if (!email ||!password) {
+      if (!email || !password) {
         throw new BadRequestError('Missing fields in the request body', {
           details: {
-            email:!email? 'Missing email' : undefined,
-            password:!password? 'Missing password' : undefined
+            email: !email ? 'Missing email' : undefined,
+            password: !password ? 'Missing password' : undefined
           }
         })
       }
@@ -76,7 +76,7 @@ export class AuthController {
       })
     } catch (error) {
       throw new InternalServerError('Error in server', {
-        details: error instanceof Error? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error'
       })
     }
   }
@@ -100,7 +100,7 @@ export class AuthController {
       })
     } catch (error) {
       throw new InternalServerError('Error in server', {
-        details: error instanceof Error? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error'
       })
     }
   }
