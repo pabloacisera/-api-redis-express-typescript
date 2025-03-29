@@ -1,40 +1,52 @@
+import { InternalServerError } from "../customErrors/custom.errors";
 import { IOwner, IOwnerCreate, IResponse } from "../interfaces/owner.interface";
 import { OwnerModel } from "../models/OwnerModel";
 import { ApiError } from "../utils/ApiError";
+import { createOwnerCache, deleteOwnerCache, getAllOwnersCache, getOwnerFromCache } from "../utils/ownerCache.utils";
+import { ExcelService } from './ExcelService';
 
 export class OwnerService {
   private readonly model: OwnerModel
+  private readonly excelService: ExcelService
 
   constructor() {
     this.model = new OwnerModel()
+    this.excelService = new ExcelService()
   }
 
   async createOwner(owner: IOwnerCreate): Promise<IResponse<IOwner>> {
     try {
-      const existingEmail = await this.model.findByEmail(owner.email)
+      const ownerData = {
+        ...owner,
+        birthDate: new Date(owner.birthDate)
+      }
+
+      const existingEmail = await this.model.findByEmail(ownerData.email)
 
       if (existingEmail) {
         throw new ApiError('Email already in use', 400)
       }
 
-      const existingDni = await this.model.findByDni(owner.dni)
+      const existingDni = await this.model.findByDni(ownerData.dni)
 
       if (existingDni) {
         throw new ApiError('DNI already in use', 400)
       }
 
-      const existingCuit = await this.model.findByCuit(owner.cuit)
+      const existingCuit = await this.model.findByCuit(ownerData.cuit)
 
       if (existingCuit) {
         throw new ApiError('CUIT already in use', 400)
       }
 
-      const ownerData = await this.model.createOwner(owner)
+      const ownerResult = await this.model.createOwner(ownerData)
+
+      await createOwnerCache(ownerResult)
 
       return {
         success: true,
         message: 'Owner created successfully',
-        data: owner
+        data: ownerResult
       }
     } catch (error) {
       throw new ApiError(`Error creating owner: ${error}`, 500)
@@ -43,7 +55,22 @@ export class OwnerService {
 
   async getAllOwners(): Promise<IResponse<IOwner[]>> {
     try {
+
+      const cachedOwners = await getAllOwnersCache()
+
+      if (cachedOwners && cachedOwners.length > 0) {
+        return {
+          success: true,
+          message: 'Owners retrieved successfully from cache',
+          data: cachedOwners
+        }
+      }
+
       const owners = await this.model.findAll()
+
+      if (owners && owners.length > 0) {
+        await Promise.all(owners.map(owner => createOwnerCache(owner)))
+      }
 
       return {
         success: true,
@@ -57,6 +84,17 @@ export class OwnerService {
 
   async getOwnerById(id: number): Promise<IResponse<IOwner | null>> {
     try {
+
+      const cachedOwner = await getOwnerFromCache(id)
+
+      if (cachedOwner) {
+        return {
+          success: true,
+          message: 'Owner retrieved successfully from cache',
+          data: cachedOwner
+        }
+      }
+
       const owner = await this.model.findById(id)
 
       if (!owner) {
@@ -104,6 +142,8 @@ export class OwnerService {
 
       const updatedOwner = await this.model.updateOwner(id, ownerData);
 
+      await createOwnerCache(updatedOwner)
+
       return {
         success: true,
         message: 'Owner updated successfully',
@@ -124,12 +164,29 @@ export class OwnerService {
 
       await this.model.deleteOwner(id)
 
+      await deleteOwnerCache(id.toString())
+
       return {
         success: true,
         message: 'Owner deleted successfully'
       }
     } catch (error) {
       throw new ApiError(`Error deleting owner: ${error}`, 500)
+    }
+  }
+
+  async downloadDocumentsOwners() {
+    try {
+      const owners = await this.getAllOwners()
+      console.log('owners found: ', owners)
+      if (!owners.success || !owners.data) {
+        throw new ApiError('Coult not retrieve owners data', 404)
+      }
+
+      return owners.data
+    } catch (error) {
+      console.error('Error fetching owners: ', error)
+      throw new InternalServerError('Error into request', 500)
     }
   }
 }

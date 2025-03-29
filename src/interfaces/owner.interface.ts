@@ -13,13 +13,15 @@ export interface IOwner {
   updatedAt?: Date;
 }
 
-export interface IResponse<T>{
+export interface IResponse<T> {
   success: boolean;
   message: string;
   data?: T;
   error?: any;
 }
 
-export interface IOwnerCreate extends Omit<IOwner, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface IOwnerCreate extends Omit<IOwner, 'id' | 'createdAt' | 'updatedAt' | 'birthDate'> {
+  birthDate: Date | string;
+}
 
-export interface IOwnerUpdate extends Partial<IOwnerCreate> {}
+export interface IOwnerUpdate extends Partial<IOwnerCreate> { }

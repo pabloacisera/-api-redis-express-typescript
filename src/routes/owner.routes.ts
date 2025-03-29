@@ -1,5 +1,5 @@
-import Router from 'express'
-import { OwnerController } from '../controllers/OwnerController'
+import Router from 'express';
+import { OwnerController } from '../controllers/OwnerController';
 
 const router = Router()
 const ownerController = new OwnerController()
@@ -22,5 +22,9 @@ router.patch('/update_owner/:id', (req, res, next) => {
 
 router.delete('/delete_owner/:id', (req, res, next) => {
   ownerController.deleteOwner(req, res).catch(next);
+});
+
+router.get('/download_documents_owners', (req, res) => {
+  ownerController.downloadDocumentFromOwners(req, res)
 });
 export default router

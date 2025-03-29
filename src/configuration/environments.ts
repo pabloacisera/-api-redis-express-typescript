@@ -11,13 +11,16 @@ interface AppEnvs {
   SECRET_KEY: string;
   GOOGLE_USER_APP: string;
   GOOGLE_PASSWORD_APP: string;
-  GOOGLE_CLIENT_ID: string; 
+  GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_REDIRECT_URI: string;
   EMAIL_FROM: string;
   EMAIL_FROM_NAME: string;
   EMAIL_PORT: string;
   EMAIL_HOST: string;
+  REDIS_HOST: string;
+  REDIS_PORT: string;
+  REDIS_CACHE_EXPIRATION: string;
 }
 
 export const envs: AppEnvs = {
@@ -34,7 +37,10 @@ export const envs: AppEnvs = {
   EMAIL_FROM: process.env.EMAIL_FROM || '',
   EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || '',
   EMAIL_PORT: process.env.EMAIL_PORT || '',
-  EMAIL_HOST:process.env.EMAIL_HOST || '',
+  EMAIL_HOST: process.env.EMAIL_HOST || '',
+  REDIS_HOST: process.env.REDIS_HOST || '',
+  REDIS_PORT: process.env.REDIS_PORT || '',
+  REDIS_CACHE_EXPIRATION: process.env.REDIS_CACHE_EXPIRATION || '36000',
 };
 
 // Validaciones
@@ -49,5 +55,8 @@ if (!envs.EMAIL_FROM_NAME) throw new Error('EMAIL_FROM_NAME is required')
 if (!envs.GOOGLE_USER_APP) throw new Error('GOOGLE_USER_APP  is required')
 if (!envs.GOOGLE_PASSWORD_APP) throw new Error('GOOGLE_PASSWORD_APP is required')
 if (!envs.EMAIL_PORT) throw new Error('EMAIL_PORT is required')
-if (!envs.EMAIL_HOST) throw new Error('EMAIL_HOST is required') 
-if(!envs.BACKEND_URL) throw new Error('BACKEND_URL is required')
+if (!envs.EMAIL_HOST) throw new Error('EMAIL_HOST is required')
+if (!envs.BACKEND_URL) throw new Error('BACKEND_URL is required')
+if (!envs.REDIS_HOST) throw new Error('REDIS_HOST is required')
+if (!envs.REDIS_PORT) throw new Error('REDIS_PORT is required')
+if (!envs.REDIS_CACHE_EXPIRATION) throw new Error('REDIS_CACHE_EXPIRATION is required')
