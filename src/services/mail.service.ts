@@ -18,6 +18,15 @@ export class MailService {
         <h1>Restablecer contraseña</h1>
         <p>Para restablecer tu contraseña, haz click en el siguiente enlace: <a href="http://localhost:3000/auth/reset-password/${data.token}">Restablecer contraseña</a></p>
       `
+    },
+
+    RECOVERY_PASSWORD: {
+      subject: 'Código de Recuperación de Contraseña',
+      html: (data: { code: string }) => `
+        <h1>Código de Recuperación de Contraseña</h1>
+        <p>Tu código de recuperación es: <strong>${data.code}</strong></p>
+        <p>Este código expirará en 10 minutos.</p>
+      `
     }
   }
 

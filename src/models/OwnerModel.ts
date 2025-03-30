@@ -9,7 +9,20 @@ export class OwnerModel {
   }
 
   async createOwner(owner: IOwnerCreate): Promise<IOwner> {
-    return await this.prisma.owner.create({ data: owner })
+    const now = new Date();
+
+    return await this.prisma.owner.create({
+      data: {
+        ...owner,
+        birthDate: new Date(owner.birthDate),
+        createdAt: owner.createdAt && !isNaN(new Date(owner.createdAt).getTime())
+          ? new Date(owner.createdAt)
+          : now,
+        updatedAt: owner.updatedAt && !isNaN(new Date(owner.updatedAt).getTime())
+          ? new Date(owner.updatedAt)
+          : now
+      }
+    });
   }
 
   async findAll(): Promise<IOwner[]> {

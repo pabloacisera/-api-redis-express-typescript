@@ -1,9 +1,11 @@
 import * as ExcelJS from 'exceljs';
 import { Request, Response } from 'express';
+import { createOwnerCache, getOwnerFromCache } from '../helpers/ownerCache.helper';
+import { OwnerModel } from '../models/OwnerModel';
 import { ApiError } from '../utils/ApiError';
 
 export class ExcelService {
-
+  private static model: OwnerModel = new OwnerModel()
   private static allowedMimeTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-excel'
@@ -45,11 +47,67 @@ export class ExcelService {
       }
 
       const data = this.extractDataFromWorksheet(worksheet);
-      console.log('Datos procesados:', data);
-      return data;
+      const dataConverted = this.convertDataTypes(data)
+      console.log('Datos procesados:', dataConverted);
+
+
+      /**
+      * Debemos recorrer el arreglo de objetos y por cada id buscar si existe en base  de datos, si no existe lo incoporamos 
+      * a DB y luego actualizamos redis, si existe lo obviamos ya que las base de da datos no necesitan que se ingrese es dato
+      * */
+      /**
+      * utilizamos un bucle for porque dentro del foreach no se puede usar await
+      * */
+
+      for (let i of dataConverted) {
+        try {
+          let resCache = await getOwnerFromCache(Number(i.id))
+          if (!resCache) {
+            console.log(`No se ha encontrado informacion en cache con id: ${i.id}`)
+            // consultar en base de datos:    
+            const resFromDb = await this.model.findById(i.id)
+            if (!resFromDb) {
+              console.log('NO existe el dato en DB')
+              await this.model.createOwner(i)
+              await createOwnerCache(i)
+            }
+            console.log('Datos obtenido por id desde base de datos: ', resFromDb)
+          }
+          console.log('Datos obtenidos por id desde cache: ', resCache)
+        } catch (error) {
+          console.error('error desde cache: ', error)
+        }
+      }
+      return dataConverted;
     } catch (error) {
       throw new ApiError(`Error processing Excel: ${error}`, 500);
     }
+  }
+
+  static convertDataTypes(data: any[]): any[] {
+    const parseSafeDate = (dateValue: any): Date | null => {
+      try {
+        const date = new Date(dateValue);
+        return !isNaN(date.getTime()) ? date : null;
+      } catch {
+        return null;
+      }
+    };
+    return data.map(item => {
+      const now = new Date();
+      return {
+        id: parseInt(item.id, 10),
+        name: String(item.name),
+        dni: String(item.dni),
+        cuit: String(item.cuit),
+        age: String(item.age),
+        address: String(item.address),
+        phone: String(item.phone),
+        email: String(item.email.text),
+        birthDate: new Date(item.birthDate),
+        nationality: String(item.nationality || 'Argentina'),
+      }
+    })
   }
 
   private static hasValidFile(req: Request): boolean {

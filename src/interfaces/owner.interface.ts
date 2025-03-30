@@ -22,6 +22,8 @@ export interface IResponse<T> {
 
 export interface IOwnerCreate extends Omit<IOwner, 'id' | 'createdAt' | 'updatedAt' | 'birthDate'> {
   birthDate: Date | string;
+  createdAt?: Date | string;  // Hacemos opcionales estas propiedades
+  updatedAt?: Date | string;
 }
 
 export interface IOwnerUpdate extends Partial<IOwnerCreate> { }

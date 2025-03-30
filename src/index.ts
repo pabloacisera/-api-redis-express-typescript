@@ -19,7 +19,7 @@ app.use(express.json());
 
 app.use('/auth', authRoutes);
 app.use('/api/owners', authMiddleware, ownerRoutes);
-app.use('/api/excel', excelRoutes)
+app.use('/api/excel', authMiddleware, excelRoutes)
 
 app.listen(port, () => {
   console.clear();

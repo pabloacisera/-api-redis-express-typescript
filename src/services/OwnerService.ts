@@ -1,8 +1,8 @@
 import { InternalServerError } from "../customErrors/custom.errors";
+import { createOwnerCache, deleteOwnerCache, getAllOwnersCache, getOwnerFromCache } from "../helpers/ownerCache.helper";
 import { IOwner, IOwnerCreate, IResponse } from "../interfaces/owner.interface";
 import { OwnerModel } from "../models/OwnerModel";
 import { ApiError } from "../utils/ApiError";
-import { createOwnerCache, deleteOwnerCache, getAllOwnersCache, getOwnerFromCache } from "../utils/ownerCache.utils";
 import { ExcelService } from './ExcelService';
 
 export class OwnerService {
