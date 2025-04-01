@@ -3,11 +3,8 @@ import express from 'express';
 import morgan from 'morgan';
 import { envs } from './configuration/environments';
 import connectRedis from './configuration/redis.config';
-import { authMiddleware } from './middlewares/authMiddlewares';
 import authRoutes from './routes/auth.routes';
-import ownerRoutes from './routes/owner.routes';
-import excelRoutes from './routes/excel.routes'
-import propertiesRoutes from './routes/properties.routes'
+
 
 const app = express();
 const port = envs.PORT;
@@ -19,9 +16,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 app.use('/auth', authRoutes);
-app.use('/api/owners', authMiddleware, ownerRoutes);
-app.use('/api/excel', authMiddleware, excelRoutes)
-app.use('/api/properties', authMiddleware, propertiesRoutes)
+
 
 app.listen(port, () => {
   console.clear();
@@ -53,159 +48,6 @@ app.listen(port, () => {
 
   // -------------------- AUTH ROUTES --------------------
   console.log(chalk.bgHex('#ff79c6').white.bold('\n 🔐 AUTH ROUTES '));
-
-  // Login
-  console.log(chalk.bold('\n📮 POST /auth/login'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Body:'));
-  console.log(chalk.gray('│    ') + chalk.cyan(JSON.stringify({
-    email: "usuario@ejemplo.com",
-    password: "contraseñaSegura123"
-  }, null, 2).replace(/\n/g, '\n│    ')));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Login exitoso",
-    user: {
-      id: 1,
-      name: "Pablo",
-      email: "usuario@ejemplo.com",
-      role: "admin"
-    },
-    token: {
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    }
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Register
-  console.log(chalk.bold('\n📝 POST /auth/register'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Body:'));
-  console.log(chalk.gray('│    ') + chalk.cyan(JSON.stringify({
-    name: "Usuario Nuevo",
-    username: "usuario123",
-    email: "nuevo@ejemplo.com",
-    password: "contraseñaSegura123",
-    role: "user"
-  }, null, 2).replace(/\n/g, '\n│    ')));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Usuario registrado, verifica tu email"
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Confirm Email
-  console.log(chalk.bold('\n✉️ GET /auth/confirm_email/:token'));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Email confirmado exitosamente"
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // -------------------- OWNERS ROUTES --------------------
-  console.log(chalk.bgHex('#bd93f9').white.bold('\n 👑 OWNERS ROUTES '));
-
-  // Create Owner (con todos los campos según modelo)
-  console.log(chalk.bold('\n🆕 POST /api/owners/create_owner'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Body:'));
-  console.log(chalk.gray('│    ') + chalk.cyan(JSON.stringify({
-    name: "Empresa SA",
-    dni: "30123456",
-    cuit: "30-12345678-9",
-    age: "30",
-    address: "Calle Falsa 123",
-    phone: "+5491123456789",
-    email: "empresa@ejemplo.com",
-    birthDate: "1990-01-01",
-    nationality: "Argentina"
-  }, null, 2).replace(/\n/g, '\n│    ')));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Owner creado exitosamente",
-    data: {
-      id: 1,
-      name: "Empresa SA",
-      dni: "30123456",
-      cuit: "30-12345678-9",
-      age: "30",
-      address: "Calle Falsa 123",
-      phone: "+5491123456789",
-      email: "empresa@ejemplo.com",
-      birthDate: "1990-01-01T00:00:00.000Z",
-      nationality: "Argentina",
-      createdAt: "2023-01-01T12:00:00.000Z",
-      updatedAt: "2023-01-01T12:00:00.000Z"
-    }
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Get Owner
-  console.log(chalk.bold('\n🔍 GET /api/owners/get_owner/:id'));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Owner encontrado",
-    data: {
-      id: 1,
-      name: "Empresa SA",
-      dni: "30123456",
-      cuit: "30-12345678-9",
-      age: "30",
-      address: "Calle Falsa 123",
-      phone: "+5491123456789",
-      email: "empresa@ejemplo.com",
-      birthDate: "1990-01-01T00:00:00.000Z",
-      nationality: "Argentina",
-      createdAt: "2023-01-01T12:00:00.000Z",
-      updatedAt: "2023-01-01T12:00:00.000Z"
-    }
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Update Owner (ejemplo con varios campos actualizables)
-  console.log(chalk.bold('\n✏️ PATCH /api/owners/update_owner/:id'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Body:'));
-  console.log(chalk.gray('│    ') + chalk.cyan(JSON.stringify({
-    phone: "+5491123456789",
-    address: "Nueva Dirección 456",
-    email: "nuevoemail@empresa.com"
-  }, null, 2).replace(/\n/g, '\n│    ')));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Owner actualizado",
-    data: {
-      id: 1,
-      phone: "+5491123456789",
-      address: "Nueva Dirección 456",
-      email: "nuevoemail@empresa.com",
-      updatedAt: "2023-01-02T12:00:00.000Z"
-    }
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Delete Owner
-  console.log(chalk.bold('\n🗑️ DELETE /api/owners/delete_owner/:id'));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    success: true,
-    message: "Owner eliminado exitosamente"
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // Donwload excel of owners
-  console.log(chalk.bold('\n 📥 GET /api/owners/download_documents_owners'));
-  console.log(chalk.gray('└── ') + chalk.white('Response:'));
-  console.log(chalk.gray('     ') + chalk.cyan(JSON.stringify({
-    'Content-Type': 'application / vnd.openxmlformats - officedocument.spreadsheetml.sheet',
-    'Content-Disposition': 'attachment; filename=owners.xlsx'
-  }, null, 2).replace(/\n/g, '\n     ')));
-
-  // -------------------- EXCEL UPLOAD ROUTE --------------------
-  console.log(chalk.bgHex('#ffb86c').black.bold('\n 📤 EXCEL UPLOAD ROUTE '));
-
-  // Upload Excel file
-  console.log(chalk.bold('\n📤 POST /api/upload/excel'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Headers:'));
-  console.log(chalk.gray('│    ') + chalk.cyan('Content-Type: multipart/form-data'));
-  console.log(chalk.gray('├── ') + chalk.white('Request Body (form-data):'));
-  console.log(chalk.gray('│    ') + chalk.cyan('file: <Excel file> (max 5MB)'));
-  console.log(chalk.gray('│    ') + chalk.cyan('Allowed types: .xlsx, .xls'));
 
   // Footer
   console.log(chalk.hex('#6272a4').italic('\nDeveloped with ❤️ by Pablo'));
