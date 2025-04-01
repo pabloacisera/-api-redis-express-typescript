@@ -3,8 +3,9 @@ import express from 'express';
 import morgan from 'morgan';
 import { envs } from './configuration/environments';
 import connectRedis from './configuration/redis.config';
+import { authMiddleware } from './middlewares/authMiddlewares';
 import authRoutes from './routes/auth.routes';
-
+import excelRoutes from './routes/excel.routes';
 
 const app = express();
 const port = envs.PORT;
@@ -16,6 +17,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 app.use('/auth', authRoutes);
+app.use('/owner', authMiddleware, excelRoutes)
 
 
 app.listen(port, () => {

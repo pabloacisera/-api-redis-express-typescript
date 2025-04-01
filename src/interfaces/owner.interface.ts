@@ -13,7 +13,7 @@ export interface IOwner {
   updatedAt?: Date;
 }
 
-export interface IResponse<T> {
+export interface IOwnerResponse<T> {
   success: boolean;
   message: string;
   data?: T;
