@@ -7,6 +7,7 @@ import { authMiddleware } from './middlewares/authMiddlewares';
 import authRoutes from './routes/auth.routes';
 import ownerRoutes from './routes/owner.routes';
 import excelRoutes from './routes/excel.routes'
+import propertiesRoutes from './routes/properties.routes'
 
 const app = express();
 const port = envs.PORT;
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/api/owners', authMiddleware, ownerRoutes);
 app.use('/api/excel', authMiddleware, excelRoutes)
+app.use('/api/properties', authMiddleware, propertiesRoutes)
 
 app.listen(port, () => {
   console.clear();

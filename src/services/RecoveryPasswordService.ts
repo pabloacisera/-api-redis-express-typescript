@@ -1,60 +1,125 @@
-// RecoveryPasswordService.ts
-import { PrismaClient } from "@prisma/client"
-import randomBytes from 'randombytes'
-import { MailService } from "./mail.service"
-import { saveRecoveryCode } from "../helpers/recoveryCode.helper"
+import { PrismaClient } from "@prisma/client";
+import { hashSync } from 'bcrypt';
+import randomBytes from 'randombytes';
+import { getRecoveryCode, saveRecoveryCode } from "../helpers/recoveryCode.helper";
+import { MailService } from "./mail.service";
+
+interface RecoveryResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+  debug?: {  // Para información de depuración en desarrollo
+    storedCode?: string | null;
+    receivedCode?: string;
+  };
+  error?: string;  // Para mensajes de error detallados
+}
 
 export class RecoveryPasswordService {
+  private readonly prisma: PrismaClient;
+  private readonly emailService: MailService;
 
-  private readonly prisma: PrismaClient
-  private readonly emailService: MailService
-
-
-  // Inyectamos la conexión a Redis desde fuera (controlador o donde sea)
   constructor() {
-    this.prisma = new PrismaClient()
-    this.emailService = new MailService()
+    this.prisma = new PrismaClient();
+    this.emailService = new MailService();
   }
 
-  public async createCode(email: string) {
-
-    // Buscar al usuario en la base de datos
-    const userFound = await this.prisma.user.findUnique({ where: { email } })
-
-    if (!userFound) {
-      return 'Email not registered yet'
-    }
-
-    // Generar un código aleatorio
-    const randomByte = randomBytes(6)
-    const hexString = randomByte.toString('base64')
-    console.log('tipo de hex: ', hexString,typeof hexString)
-    // Configurar el correo con el código
-    const emailOptions = {
-      to: userFound.email,
-      subject: 'Código de Recuperación de Contraseña',
-      html: `
-        <h1>Código de Recuperación de Contraseña</h1>
-        <p>Tu código de recuperación es: <strong>${hexString}</strong></p>
-        <p>Este código expirará en 1 minuto.</p>
-      `
-    }
-
+  public async createAndSendCode(email: string): Promise<RecoveryResponse> {
     try {
-      // Enviar el correo al usuario
-      const mailSent = await this.emailService.sendEmail(emailOptions)
-      if (!mailSent) {
-        return 'Error sending email'
+      // Verificar si el email existe
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return { success: false, message: 'Email no registrado' };
       }
 
-      // Guardar el código en Redis con un tiempo de expiración de 60 segundos
-      await saveRecoveryCode(email, hexString);
+      // Generar código de 6 dígitos
+      const code = randomBytes(3).toString('hex').toUpperCase();
 
-      return hexString // Devolver el código generado si el correo se envió correctamente
+      // Enviar por email
+      const emailSent = await this.emailService.sendEmail({
+        to: email,
+        subject: 'Código de recuperación',
+        html: `Tu código es: <strong>${code}</strong> (válido por 2 minutos)`
+      });
+
+      if (!emailSent) {
+        return { success: false, message: 'Error al enviar el email' };
+      }
+
+      // Guardar en Redis (key: email, value: code)
+      await saveRecoveryCode(email, code);
+
+      return {
+        success: true,
+        message: 'Código enviado correctamente',
+        data: { email }
+      };
     } catch (error) {
-      console.error('Error al enviar el correo:', error)
-      return 'Error al enviar el correo'
+      console.error('Error en createAndSendCode:', error);
+      return { success: false, message: 'Error al generar el código' };
+    }
+  }
+
+  public async resetPassword(
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<RecoveryResponse> {
+    try {
+      // 1. Verificar el código
+      const storedCode = await getRecoveryCode(email);
+
+      if (!storedCode || storedCode.trim() !== code.trim()) {
+        const response: RecoveryResponse = {
+          success: false,
+          message: 'Código inválido o expirado'
+        };
+
+        // Solo agregar debug en entorno de desarrollo
+        if (process.env.NODE_ENV === 'development') {
+          response.debug = {
+            storedCode,
+            receivedCode: code
+          };
+        }
+
+        return response;
+      }
+
+      // 2. Buscar usuario
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return {
+          success: false,
+          message: 'Usuario no encontrado'
+        };
+      }
+
+      // 3. Hashear y actualizar contraseña
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashSync(newPassword, 10) }
+      });
+
+      // 4. Eliminar código usado
+      //await deleteRecoveryCode(email);
+
+      return {
+        success: true,
+        message: 'Contraseña actualizada correctamente'
+      };
+
+    } catch (error) {
+      const response: RecoveryResponse = {
+        success: false,
+        message: 'Error al cambiar la contraseña'
+      };
+
+      if (error instanceof Error) {
+        response.error = error.message;
+      }
+
+      return response;
     }
   }
 }
-

@@ -18,8 +18,14 @@ router.get('/confirm_email/:id', (req, res, next) => {
   controller.confirmationEmail(req, res).catch(next);
 });
 
-router.post('/create_code/', (req, res, next) => {
-  verifiedController.createCode(req, res).catch(next)
-})
+
+// Recuperación de contraseña
+router.post('/recovery/send-code', (req, res, next) => {
+  verifiedController.sendCode(req, res).catch(next);
+});
+
+router.post('/recovery/reset-password', (req, res, next) => {
+  verifiedController.resetPassword(req, res).catch(next);
+});
 
 export default router;

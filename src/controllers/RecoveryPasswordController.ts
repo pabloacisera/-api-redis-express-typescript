@@ -1,29 +1,22 @@
-import { Request, Response } from 'express'
-import { RecoveryPasswordService } from '../services/RecoveryPasswordService'
+import { Request, Response } from 'express';
+import { RecoveryPasswordService } from '../services/RecoveryPasswordService';
 
 export class RecoveryPasswordController {
-  private recoveryService: RecoveryPasswordService
+  private readonly service: RecoveryPasswordService;
 
   constructor() {
-    this.recoveryService = new RecoveryPasswordService()
+    this.service = new RecoveryPasswordService();
   }
 
-  public async createCode(req: Request, res: Response): Promise<Response> {
-    const { email } = req.body
-    try {
-      const generatedCode = await this.recoveryService.createCode(email)
-      if (!generatedCode) {
-        throw new Error('Error into request')
-      }
+  public async sendCode(req: Request, res: Response) {
+    const { email } = req.body;
+    const result = await this.service.createAndSendCode(email);
+    return res.status(result.success ? 200 : 400).json(result);
+  }
 
-      return res.status(200).json({
-        'success': true,
-        'data': generatedCode
-      })
-
-    } catch (error) {
-      console.error(error)
-      return res.status(500).send('internal server error')
-    }
+  public async resetPassword(req: Request, res: Response) {
+    const { email, code, newPassword } = req.body;
+    const result = await this.service.resetPassword(email, code, newPassword);
+    return res.status(result.success ? 200 : 400).json(result);
   }
 }
