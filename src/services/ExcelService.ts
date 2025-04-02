@@ -8,9 +8,9 @@ export class ExcelService {
     'application/vnd.ms-excel'
   ];
 
-  async createExcel(datasheet: DataSheet): Promise<any> {
+  async createExcel(dataSheet: DataSheet): Promise<any> {
     try {
-      const { titleSheet, data } = datasheet
+      const { titleSheet = 'default-sheet', data } = dataSheet
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(titleSheet);

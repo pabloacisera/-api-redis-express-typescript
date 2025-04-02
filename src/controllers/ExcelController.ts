@@ -11,13 +11,17 @@ export class ExcelController {
 
   async generateExcel(req: Request, res: Response) {
     try {
-      const { titleSheet, data } = req.body
-      
+      const { titleSheet = 'export', data } = req.body
+
       if (!data || !Array.isArray(data) || data.length === 0) {
         throw new Error('Invalid data provided')
       }
 
       const buffer = await this.excelService.createExcel({ titleSheet, data })
+
+      // Preparar nombre del ARCHIVO (no de la hoja)
+      const filename = `${titleSheet}.xlsx`.replace(/[^\w.-]/g, '_'); // Reemplaza caracteres inválidos
+      const safeFilename = encodeURIComponent(filename);
 
       // Configurar headers para descarga
       res.setHeader(
@@ -26,7 +30,7 @@ export class ExcelController {
       );
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=${titleSheet || 'export'}.xlsx`
+        `attachment; filename="${safeFilename}"; filename*=UTF-8''${safeFilename}`
       );
 
       return res.send(buffer);

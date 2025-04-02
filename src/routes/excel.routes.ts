@@ -4,7 +4,7 @@ import { ExcelController } from '../controllers/ExcelController'
 const router = Router()
 const excelController = new ExcelController()
 
-router.post('/', (req, res, next) => {
+router.post('/create', (req, res, next) => {
   excelController.generateExcel(req, res).catch(next)
 })
 

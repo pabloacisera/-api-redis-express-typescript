@@ -17,7 +17,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 app.use('/auth', authRoutes);
-app.use('/owner', authMiddleware, excelRoutes)
+app.use('/api/excel', authMiddleware, excelRoutes)
 
 
 app.listen(port, () => {

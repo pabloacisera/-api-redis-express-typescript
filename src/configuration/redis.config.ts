@@ -1,33 +1,27 @@
-import chalk from 'chalk'
-import { createClient } from 'redis'
-import { envs } from './environments'
+import { createClient } from "redis"
+import { envs } from "./environments"
 
-export const connectRedis = async () => {
-  const redisClient = createClient({
-    url: `${envs.REDIS_HOST}:${envs.REDIS_PORT}`
-  })
+export class RedisClient {
+  private client
 
+  constructor() {
+    this.client = createClient({
+      url: `${envs.REDIS_HOST}:${envs.REDIS_PORT}`
+    })
+    this.client.on('error', (err) => console.error('Redis clien error:', err))
+    this.client.connect()
+  }
 
-  // Manejo de errores con estilo 🎨
-  redisClient.on('error', (err) => {
-    console.error(
-      chalk.bgRed.white.bold(' 🚨 REDIS ERROR ') +
-      chalk.red('\n → ') +
-      chalk.white(err.message) +
-      chalk.gray('\n' + '-'.repeat(50)))
-  });
+  async set(key: string, value: any): Promise<void> {
+    await this.client.set(key, JSON.stringify(value))
+  }
 
-  // Conexión exitosa 🎉
-  redisClient.on('connect', () => {
-    console.log(
-      chalk.bgGreen.black.bold(' ✅ REDIS CONNECTED ') +
-      chalk.green('\n → ') +
-      chalk.white(`Host: ${envs.REDIS_HOST}:${envs.REDIS_PORT}`) +
-      chalk.gray('\n' + '━'.repeat(47)))
-  });
+  async get(key: string): Promise<string | null> {
+    const result = await this.client.get(key)
+    return result ? JSON.parse(result) : null
+  }
 
-  await redisClient.connect()
-  return redisClient
+  async setex(key: string, seconds: number, value: string) {
+    await this.client.setEx(key, seconds, value)
+  }
 }
-
-export default connectRedis
