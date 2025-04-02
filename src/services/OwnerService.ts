@@ -61,7 +61,7 @@ export class OwnerService extends BaseModel {
       const result = await super.findMany<Owner>()
 
       if (result.success && result.data) {
-        await this.redis.setex(cachekey, 3600, JSON.stringify(result.data))
+        await this.redis.setex(cachekey, 3600, result.data)
       }
       return result
     } catch (error) {
@@ -77,31 +77,139 @@ export class OwnerService extends BaseModel {
 
   async getOwnerById(id: string): Promise<IOwnerResponse<Owner>> {
     try {
-      const ownerCache = await this.redis.get(`owner:${id}`)
-      if (ownerCache) {
-        return {
-          success: true,
-          message: 'owner get by id fron cache',
-          data: JSON.parse(ownerCache)
-        }
-      }
-      const result = await super.findById<Owner>(id)
+      // Intenta obtener de Redis
+      const ownerCache = await this.redis.get(`owner:${id}`);
 
-      if (result.success && result.data) {
-        await this.redis.setex(`owner:${id}`, 3600, JSON.stringify(result.data))
+      if (ownerCache) {
+        if (typeof ownerCache === 'object') {
+          return {
+            success: true,
+            message: 'Owner retrieved from cache',
+            data: ownerCache,
+            error: null,
+          };
+        }
+        return {
+          success: false,
+          message: 'Invalid cache format',
+          error: 'Cached data is not in expected format',
+          data: undefined
+        };
       }
+
+      // Si no está en caché, busca en la base de datos
+      const dbResult = await super.findById<Owner>(id);
+
+      if (!dbResult.success || !dbResult.data) {
+        return {
+          success: false,
+          message: 'Owner not found',
+          error: dbResult.error || 'Owner does not exist',
+          data: undefined
+        };
+      }
+
+      // Guarda en Redis con manejo de errores
+      try {
+        await this.redis.setex(`owner:${id}`, 3600, dbResult.data);
+      } catch (redisError) {
+        console.error('Failed to cache owner:', redisError);
+        // No es crítico, podemos continuar
+      }
+
       return {
         success: true,
-        message: 'owner get by id',
-        data: result.data
-      }
-    } catch (err) {
+        message: 'Owner retrieved from database',
+        data: dbResult.data,
+        error: null,
+      };
+
+    } catch (error) {
+      console.error('Error in getOwnerById:', error);
       return {
         success: false,
-        message: 'internal server error',
+        message: 'Failed to retrieve owner',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: undefined,
+      };
+    }
+  }
+
+  async deleteOwner(id: string): Promise<IOwnerResponse<Owner | null>> {
+    try {
+      const ownerExists = await super.findById<Owner>(id);
+
+      if (!ownerExists.success || !ownerExists.data) {
+        return {
+          success: false,
+          message: 'Owner not found',
+          data: null,
+          error: ownerExists.error,
+        };
       }
+
+      const deleteOwner = await super.delete<Owner>(id);
+
+      if (deleteOwner.success) {
+        await this.redis.del(`owner:${id}`);
+        return {
+          success: true,
+          message: 'Owner deleted successfully',
+          data: deleteOwner.data,
+          error: null,
+        };
+      } else {
+        return deleteOwner;
+      }
+
+    } catch (error) {
+      console.error('Error deleting owner:', error);
+      return {
+        success: false,
+        message: 'Failed to delete owner',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: null,
+      };
+    }
+  }
+
+  async updateOwner(id: string, data: Partial<IOwner>): Promise<IOwnerResponse<Owner>> {
+    try {
+      if (data.birthDate && typeof data.birthDate === 'string') {
+        data.birthDate = this.parseDateString(data.birthDate);
+      }
+
+      data.updatedAt = new Date();
+
+      const result = await super.update<Owner>(id, data);
+
+      if (result.success && result.data) {
+        await this.redis.setex(`owner:${id}`, 3600, result.data);
+        return {
+          success: true,
+          message: 'Owner updated successfully',
+          data: result.data,
+          error: null,
+        };
+      } else {
+        return result;
+      }
+
+    } catch (error) {
+      console.error('Error updating owner:', error);
+      return {
+        success: false,
+        message: 'Failed to update owner',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: undefined,
+      };
     }
   }
 }
+
+
+
+
+
 
 

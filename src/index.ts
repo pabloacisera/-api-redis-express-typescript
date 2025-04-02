@@ -2,22 +2,34 @@ import chalk from 'chalk';
 import express from 'express';
 import morgan from 'morgan';
 import { envs } from './configuration/environments';
-import connectRedis from './configuration/redis.config';
+import { RedisClient } from './configuration/redis.config';
 import { authMiddleware } from './middlewares/authMiddlewares';
 import authRoutes from './routes/auth.routes';
 import excelRoutes from './routes/excel.routes';
+import ownerRoutes from './routes/owner.routes';
 
 const app = express();
 const port = envs.PORT;
 
 // Conexión a Redis
-connectRedis();
+export async function connectToRedis() {
+  try {
+    const redisclient = new RedisClient();
+    await redisclient.get('test_connection');
+    console.log('>>>Connect to redis success>>>');
+  } catch (error) {
+    console.error('¡¡¡connect to redis not available!!!', error);
+  }
+}
+
+connectToRedis()
 
 app.use(morgan('dev'));
 app.use(express.json());
 
 app.use('/auth', authRoutes);
 app.use('/api/excel', authMiddleware, excelRoutes)
+app.use('/api/owners', authMiddleware, ownerRoutes)
 
 
 app.listen(port, () => {
