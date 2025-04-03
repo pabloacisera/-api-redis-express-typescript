@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
+import { FromExcelToDbService } from "../interfaces/chargeDataFromExcel.interface";
+import { ExcelService } from "../services/ExcelService";
 import { OwnerService } from "../services/OwnerService";
 
 export class OwnerController {
   private ownerService: OwnerService
+  private excelService: ExcelService
 
   constructor() {
     this.ownerService = new OwnerService()
+    this.excelService = new ExcelService()
   }
 
   async createOwner(req: Request, res: Response): Promise<Response> {
@@ -75,6 +79,79 @@ export class OwnerController {
       return res.status(200).json(deletedOwner)
     } catch (error) {
       return res.status(500).json({ success: false, message: 'internal server error', error: error })
+    }
+  }
+
+  async importFromExcel(req: Request, res: Response): Promise<Response> {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded'
+        });
+      }
+
+      if (!req.body.service) {
+        return res.status(400).json({
+          success: false,
+          message: 'No service specified for import'
+        });
+      }
+
+      // Leer el archivo Excel
+      const data = await this.excelService.readExcel(req.file.buffer);
+
+      // Obtener el servicio de destino dinámicamente
+      const serviceName = req.body.service;
+      const service: FromExcelToDbService = req.app.locals.services[serviceName];
+
+      if (!service || typeof service.importFromExcel !== 'function') {
+        return res.status(400).json({
+          success: false,
+          message: `Service '${serviceName}' not found or doesn't support import`
+        });
+      }
+
+      // Enviar datos al servicio
+      const result = await service.importFromExcel(data);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in importFromExcel:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during import',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  async downloadExcelWithOwners(req: Request, res: Response) {
+    try {
+      const { buffer, hasData } = await this.ownerService.generateExcel();
+
+      if (!hasData) {
+        return res.status(200).json({
+          success: true,
+          message: 'No se encontraron propietarios para exportar',
+          data: null
+        });
+      }
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=propietarios.xlsx');
+
+      return res.send(buffer);
+    } catch (error) {
+      console.error('Error generando Excel:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno al generar el archivo Excel'
+      });
     }
   }
 }

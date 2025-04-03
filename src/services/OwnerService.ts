@@ -1,7 +1,11 @@
 import { Owner } from '@prisma/client';
 import { RedisClient } from '../configuration/redis.config';
+import { FromExcelToDbResponse } from '../interfaces/chargeDataFromExcel.interface';
+import { DataSheet, ExcelExportResult } from '../interfaces/excel.interface';
 import { IOwner, IOwnerResponse } from "../interfaces/owner.interface";
 import { BaseModel } from "../models/BaseModel";
+import { ApiError } from '../utils/ApiError';
+import { ExcelService } from './ExcelService';
 
 
 export class OwnerService extends BaseModel {
@@ -54,7 +58,7 @@ export class OwnerService extends BaseModel {
         return {
           success: true,
           message: 'Owners retrieved from cache',
-          data: JSON.parse(ownersCache),
+          data: ownersCache,
           error: null
         }
       }
@@ -202,6 +206,98 @@ export class OwnerService extends BaseModel {
         message: 'Failed to update owner',
         error: error instanceof Error ? error.message : 'Unknown error',
         data: undefined,
+      };
+    }
+  }
+
+  async generateExcel(): Promise<ExcelExportResult> {
+    try {
+      const response = await this.getAllOwners()
+
+      if (!response.success) {
+        throw new ApiError(response.message || 'Failed to get owners data', 400)
+      }
+
+      if (!response.data || response.data.length === 0) {
+        return {
+          buffer: Buffer.alloc(0),
+          hasData: false
+        }
+      }
+
+      const excelService = new ExcelService()
+
+      const dataSheet: DataSheet = {
+        titleSheet: 'propietarios',
+        data: response.data.map(owner => ({
+          ID: owner.id,
+          NOMBRE: owner.name,
+          DNI: owner.dni,
+          CUIT: owner.cuit,
+          EDAD: owner.age,
+          DIRECCIÓN: owner.address,
+          TELEFONO: owner.phone,
+          EMAIL: owner.email,
+          NACIMIENTO: owner.birthDate,
+          NACIONALIDAD: owner.nationality,
+          CREACIÓN: owner.createdAt,
+          ACTUALIZACIÓN: owner.updatedAt,
+        }))
+      }
+
+      const buffer = await excelService.createExcel(dataSheet)
+
+      if (!buffer || !(buffer instanceof Buffer)) {
+        throw new ApiError('Generated excelbuffer is invalid', 500)
+      }
+      return {
+        buffer,
+        hasData: true
+      }
+    } catch (error) {
+      console.error('Error generando Excel:', error);
+      throw error
+    }
+  }
+
+  async importFromExcel(data: any[]): Promise<FromExcelToDbResponse> {
+    try {
+      const results: IOwnerResponse<Owner>[] = []
+
+      for (const i of data) {
+        const ownerData: IOwner = {
+          name: i.name,
+          dni: i.dni,
+          cuit: i.cuit,
+          age: i.age,
+          address: i.address,
+          phone: i.phone,
+          email: i.email,
+          birthDate: i.birthDate,
+          nationality: i.nationality,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        const result = await this.createOwner(ownerData)
+        const ownersCache = await this.redis.setex(`owner:${result.data?.id}`, 36000, result.data)
+        results.push(result)
+        return {
+          success: true,
+          message: 'owners sets to db',
+          data: results
+        }
+      }
+      return {
+        success: true,
+        message: 'Owners imported successfully',
+        data: results
+      };
+    } catch (error) {
+      console.error('Error importing owners from Excel:', error);
+      return {
+        success: false,
+        message: 'Failed to import owners from Excel',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

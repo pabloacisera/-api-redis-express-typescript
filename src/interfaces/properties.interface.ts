@@ -6,21 +6,12 @@ export interface Properties {
   address: string;
 }
 
-export interface PropertyResponse extends Properties {
-  id: number;
-  owner: {
-    id: number;
-    name: string;
-    dni: string;
-    cuit: string;
-    age: string;
-    address: string;
-    phone: string;
-    email: string;
-    birthDate: Date;
-    nationality: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-  error?: string;
+export interface PropertiesResponse<T> {
+  success: boolean;
+  message: string;
+  data: T | null;
+  error: string | null;
 }
+
+// Entonces PropertyResponse sería:
+export type PropertyResponse = PropertiesResponse<Properties>;

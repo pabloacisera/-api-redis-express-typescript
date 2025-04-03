@@ -1,4 +1,5 @@
 import Router from 'express'
+import { upload } from '../configuration/multer.config'
 import { OwnerController } from '../controllers/OwnerController'
 
 const router = Router()
@@ -9,6 +10,14 @@ router.post('/', async (req, res, next) => {
     await ownerController.createOwner(req, res);
   } catch (error) {
     next(error); // Pasa el error al middleware de manejo de errores
+  }
+})
+
+router.post('/upload/excel', upload.single('excel'), async (req, res, next) => {
+  try {
+    await ownerController.downloadExcelWithOwners(req, res)
+  } catch (error) {
+    next(error)
   }
 })
 
@@ -23,6 +32,14 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     await ownerController.getOwnerById(req, res)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.get('/import/excel', async (req, res, next) => {
+  try {
+    await ownerController.downloadExcelWithOwners(req, res)
   } catch (error) {
     next(error)
   }

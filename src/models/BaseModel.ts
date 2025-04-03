@@ -46,22 +46,34 @@ export class BaseModel {
 
   async findById<T>(id: string): Promise<IOwnerResponse<T>> {
     try {
-      const result = await (this.prismaClient[this.modelName] as any).findUnique({ where: { id } });
+
+      const numericId = parseInt(id)
+      if(isNaN(numericId)) {
+        return {
+          success: false,
+          message: 'Invalid Id format',
+          error: 'Id must be a number'
+        }
+      }
+
+      const result = await (this.prismaClient[this.modelName] as any).findUnique({ where: { id: numericId } });
       if (!result) {
         return {
           success: false,
-          message: `${this.modelName.toString()} not found`,
+          message: `No record Found`,
+          data: undefined,
+          error: undefined,
         };
       }
       return {
         success: true,
-        message: `${this.modelName.toString()} retrieved successfully`,
+        message: 'Owner found by id',
         data: result
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to retrieve ${this.modelName.toString()}`,
+        message: `Database Error`,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
@@ -92,19 +104,28 @@ export class BaseModel {
 
   async update<T>(id: string, data: Partial<T>): Promise<IOwnerResponse<T>> {
     try {
+      const numericId = parseInt(id)
+      if(isNaN(numericId)) {
+        return {
+          success: false,
+          message: 'Invalid Id format',
+          error: 'Id must be a number'
+        }
+      }
+
       const result = await (this.prismaClient[this.modelName] as any).update({
-        where: { id },
+        where: { id: numericId },
         data
       });
       return {
         success: true,
-        message: `${this.modelName.toString()} updated successfully`,
+        message: `updated successfully`,
         data: result
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to update ${this.modelName.toString()}`,
+        message: `Failed to update`,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
@@ -112,16 +133,25 @@ export class BaseModel {
 
   async delete<T>(id: string): Promise<IOwnerResponse<T>> {
     try {
-      const result = await (this.prismaClient[this.modelName] as any).delete({ where: { id } });
+      const numericId = parseInt(id)
+      if(isNaN(numericId)) {
+        return {
+          success: false,
+          message: 'Invalid Id format',
+          error: 'Id must be a number'
+        }
+      }
+
+      const result = await (this.prismaClient[this.modelName] as any).delete({ where: { id: numericId } });
       return {
         success: true,
-        message: `${this.modelName.toString()} deleted successfully`,
+        message: `deleted successfully`,
         data: result
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to delete ${this.modelName.toString()}`,
+        message: `Failed to delete`,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
