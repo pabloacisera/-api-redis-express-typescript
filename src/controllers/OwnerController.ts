@@ -1,15 +1,11 @@
 import { Request, Response } from "express";
-import { FromExcelToDbService } from "../interfaces/chargeDataFromExcel.interface";
 import { ExcelService } from "../services/ExcelService";
 import { OwnerService } from "../services/OwnerService";
 
 export class OwnerController {
   private ownerService: OwnerService
-  private excelService: ExcelService
-
   constructor() {
     this.ownerService = new OwnerService()
-    this.excelService = new ExcelService()
   }
 
   async createOwner(req: Request, res: Response): Promise<Response> {
@@ -82,54 +78,6 @@ export class OwnerController {
     }
   }
 
-  async importFromExcel(req: Request, res: Response): Promise<Response> {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'No file uploaded'
-        });
-      }
-
-      if (!req.body.service) {
-        return res.status(400).json({
-          success: false,
-          message: 'No service specified for import'
-        });
-      }
-
-      // Leer el archivo Excel
-      const data = await this.excelService.readExcel(req.file.buffer);
-
-      // Obtener el servicio de destino dinámicamente
-      const serviceName = req.body.service;
-      const service: FromExcelToDbService = req.app.locals.services[serviceName];
-
-      if (!service || typeof service.importFromExcel !== 'function') {
-        return res.status(400).json({
-          success: false,
-          message: `Service '${serviceName}' not found or doesn't support import`
-        });
-      }
-
-      // Enviar datos al servicio
-      const result = await service.importFromExcel(data);
-
-      if (!result.success) {
-        return res.status(400).json(result);
-      }
-
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error('Error in importFromExcel:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error during import',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-
   async downloadExcelWithOwners(req: Request, res: Response) {
     try {
       const { buffer, hasData } = await this.ownerService.generateExcel();
@@ -154,4 +102,56 @@ export class OwnerController {
       });
     }
   }
+
+  async getModelExcel(req: Request, res: Response) {
+    try {
+      const { tableName } = req.body
+      console.log(req.body)
+      const excelBuffer = await this.ownerService.getModelExcel(tableName)
+      // Configurar los headers para descarga
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=template.xlsx');
+
+      return res.send(excelBuffer);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  async importFromExcel(req: Request, res: Response): Promise<any> {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded'
+        });
+      }
+
+      if (!req.body.service) {
+        return res.status(400).json({
+          success: false,
+          message: 'No service specified for import'
+        });
+      }
+
+      // Pasar el buffer y el nombre del servicio al método del servicio
+      const result = await this.ownerService.importFromExcel(
+        req.file.buffer,
+        req.body.service
+      );
+
+      return res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      console.error('Error in importFromExcel:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during import',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+  
 }

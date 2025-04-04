@@ -8,9 +8,9 @@ export interface Properties {
 
 export interface PropertiesResponse<T> {
   success: boolean;
-  message: string;
-  data: T | null;
-  error: string | null;
+  message?: string;
+  data?: T | null;
+  error?: string | Error | null;
 }
 
 // Entonces PropertyResponse sería:

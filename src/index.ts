@@ -7,6 +7,7 @@ import { authMiddleware } from './middlewares/authMiddlewares';
 import authRoutes from './routes/auth.routes';
 import excelRoutes from './routes/excel.routes';
 import ownerRoutes from './routes/owner.routes';
+import propertiesRoutes from './routes/properties.routes';
 
 const app = express();
 const port = envs.PORT;
@@ -26,10 +27,12 @@ connectToRedis()
 
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
 
 app.use('/auth', authRoutes);
 app.use('/api/excel', authMiddleware, excelRoutes)
 app.use('/api/owners', authMiddleware, ownerRoutes)
+app.use('/api/properties', authMiddleware, propertiesRoutes)
 
 
 app.listen(port, () => {

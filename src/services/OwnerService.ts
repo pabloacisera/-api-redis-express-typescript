@@ -1,6 +1,5 @@
 import { Owner } from '@prisma/client';
 import { RedisClient } from '../configuration/redis.config';
-import { FromExcelToDbResponse } from '../interfaces/chargeDataFromExcel.interface';
 import { DataSheet, ExcelExportResult } from '../interfaces/excel.interface';
 import { IOwner, IOwnerResponse } from "../interfaces/owner.interface";
 import { BaseModel } from "../models/BaseModel";
@@ -11,9 +10,11 @@ import { ExcelService } from './ExcelService';
 export class OwnerService extends BaseModel {
 
   private redis = new RedisClient()
+  private excelService: ExcelService
 
   constructor() {
     super('owner');
+    this.excelService = new ExcelService()
   }
 
   private parseDateString(dateString: string): Date {
@@ -260,52 +261,121 @@ export class OwnerService extends BaseModel {
     }
   }
 
-  async importFromExcel(data: any[]): Promise<FromExcelToDbResponse> {
-    try {
-      const results: IOwnerResponse<Owner>[] = []
 
-      for (const i of data) {
-        const ownerData: IOwner = {
-          name: i.name,
-          dni: i.dni,
-          cuit: i.cuit,
-          age: i.age,
-          address: i.address,
-          phone: i.phone,
-          email: i.email,
-          birthDate: i.birthDate,
-          nationality: i.nationality,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-        const result = await this.createOwner(ownerData)
-        const ownersCache = await this.redis.setex(`owner:${result.data?.id}`, 36000, result.data)
-        results.push(result)
+
+  async getModelExcel(name: string): Promise<Buffer> {
+    try {
+      const columnsResponse = await this.getColumns('owners');
+      console.log('columnas obtenidas: ', columnsResponse);
+
+      if (!columnsResponse.success || !columnsResponse.data) {
+        throw new Error(columnsResponse.message || 'Failed to get columns');
+      }
+
+      return await this.excelService.createEmptyExcel(columnsResponse.data, 'Owners template');
+    } catch (error) {
+      console.error(error);
+      throw error; // Esto asegura que la promesa se rechace con el error
+    }
+  }
+
+  async importFromExcel(buffer: Buffer, serviceName: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any[];
+    error?: string;
+    stats?: {
+      created: number;
+      skipped: number;
+      total: number;
+    };
+  }> {
+    try {
+      // 1. Leer el archivo Excel
+      const data = await this.excelService.readExcel(buffer);
+      console.log('📊 Datos del Excel:', JSON.stringify(data, null, 2));
+
+      if (!data || data.length === 0) {
         return {
-          success: true,
-          message: 'owners sets to db',
-          data: results
+          success: false,
+          message: 'El archivo Excel está vacío o no tiene datos válidos.'
+        };
+      }
+
+      // 2. Procesar cada registro
+      const results = {
+        created: 0,
+        skipped: 0,
+        total: data.length
+      };
+
+      const processedData = [];
+
+      for (const item of data) {
+        try {
+          // 2.1. Verificar si existe por DNI usando el método del BaseModel
+          const existingOwnerResponse = await this.findByUnique<Owner>({ dni: item.dni });
+
+          if (existingOwnerResponse.success && existingOwnerResponse.data) {
+            console.log(`⏩ Propietario con DNI ${item.dni} ya existe, omitiendo`);
+            results.skipped++;
+            continue;
+          }
+
+          // 2.2. Preparar datos para creación
+          const ownerData: IOwner = {
+            name: item.name,
+            dni: item.dni,
+            cuit: item.cuit,
+            age: item.age,
+            address: item.address,
+            phone: item.phone,
+            email: item.email,
+            birthDate: new Date(item.birth_date),
+            nationality: item.nationality,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          // 2.3. Crear en base de datos usando el método create del BaseModel
+          const creationResult = await this.create<Owner>(ownerData);
+
+          if (!creationResult.success || !creationResult.data) {
+            console.error(`❌ Error creando propietario ${item.dni}:`, creationResult.message);
+            continue;
+          }
+
+          // 2.4. Guardar en Redis
+          await this.redis.set(`owner:${creationResult.data.id}`, creationResult.data);
+
+          // Invalida la caché de todos los owners
+          await this.redis.del('owners:all');
+
+          // 2.5. Agregar a resultados
+          processedData.push(creationResult.data);
+          results.created++;
+          console.log(`✅ Propietario ${item.dni} creado exitosamente`);
+
+        } catch (error) {
+          console.error(`⚠️ Error procesando registro ${item.dni}:`, error instanceof Error ? error.message : error);
         }
       }
+
       return {
         success: true,
-        message: 'Owners imported successfully',
-        data: results
+        message: `Importación completada. Creados: ${results.created}, Omitidos: ${results.skipped}`,
+        data: processedData,
+        stats: results
       };
+
     } catch (error) {
-      console.error('Error importing owners from Excel:', error);
+      console.error('❌ Error al importar desde Excel:', error);
       return {
         success: false,
-        message: 'Failed to import owners from Excel',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Error al procesar el archivo Excel',
+        error: error instanceof Error ? error.message : 'Error desconocido'
       };
     }
   }
+
 }
-
-
-
-
-
-
-

@@ -59,17 +59,18 @@ export class ExcelService {
 
     await workbook.xlsx.load(buffer)
 
-    const data:any[] = []
+    const data: any[] = []
     workbook.eachSheet(worksheet => {
       const headers: string[] = []
       let firstRow = true
 
-      worksheet.eachRow({ includeEmpty: false }, ( row, rowNumber ) => {
-        if(firstRow) {
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (firstRow) {
           row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
             headers[colNumber - 1] = cell.text
           })
           firstRow = false
+          console.log('Headers encontrados:', headers)
         } else {
           const rowData: any = {};
           row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
@@ -77,9 +78,50 @@ export class ExcelService {
             rowData[header] = cell.text;
           });
           data.push(rowData);
+          console.log(`Fila ${rowNumber}:`, rowData)
         }
       })
     })
     return data
+  }
+
+  async createEmptyExcel(headers: string[], titleSheet: string = 'sheet_default'): Promise<Buffer> {
+    try {
+      if (!headers || !Array.isArray(headers)) {
+        throw new ApiError('No headers provided for Excel generation', 400)
+      }
+
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet(titleSheet)
+
+      const headerRow = worksheet.getRow(1)
+      headerRow.font = { bold: true }
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'F2F2F2' }
+        }
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+      })
+
+      worksheet.columns = headers.map(header => ({
+        header,
+        width: Math.max(10, header.length * 1.3)
+      }))
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      return Buffer.from(buffer)
+    } catch (error) {
+      console.error('Excel generation error:', error);
+      throw error instanceof ApiError
+        ? error
+        : new ApiError('Failed to generate Excel file', 500);
+    }
   }
 }

@@ -48,7 +48,7 @@ export class BaseModel {
     try {
 
       const numericId = parseInt(id)
-      if(isNaN(numericId)) {
+      if (isNaN(numericId)) {
         return {
           success: false,
           message: 'Invalid Id format',
@@ -105,7 +105,7 @@ export class BaseModel {
   async update<T>(id: string, data: Partial<T>): Promise<IOwnerResponse<T>> {
     try {
       const numericId = parseInt(id)
-      if(isNaN(numericId)) {
+      if (isNaN(numericId)) {
         return {
           success: false,
           message: 'Invalid Id format',
@@ -134,7 +134,7 @@ export class BaseModel {
   async delete<T>(id: string): Promise<IOwnerResponse<T>> {
     try {
       const numericId = parseInt(id)
-      if(isNaN(numericId)) {
+      if (isNaN(numericId)) {
         return {
           success: false,
           message: 'Invalid Id format',
@@ -153,6 +153,25 @@ export class BaseModel {
         success: false,
         message: `Failed to delete`,
         error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  async getColumns(tableName: string): Promise<IOwnerResponse<string[]>> {
+    try {
+      const result: any = await this.prismaClient.$queryRawUnsafe(
+        `PRAGMA table_info(${tableName})`)
+      const columnNames = result.map((row: any) => row.name)
+      return {
+        success: true,
+        message: `Columns retrieved successfully for table ${tableName}`,
+        data: columnNames
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to retrieve columns for table ${tableName}`,
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
